@@ -1,0 +1,7 @@
+build/
+*.apk
+*.jks
+*.keystore
+*.idsig
+.DS_Store
+tasks.json
