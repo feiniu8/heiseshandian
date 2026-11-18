@@ -20,7 +20,9 @@
 - **软件更新**：启动时每天自动检查一次、也可手动检查；检查地址为 `https://api.github.com/repos/feiniu8/heiseshandian/releases/latest`，更新包同样走加速源下载，发布页可在软件内网页版打开，下载完成后到「下载」页点安装覆盖
 - **我（v1.1.1 新增）**：右下角「我」标签页，登录后不是照搬 GitHub 网页，而是一份可整理的个人项目清单，详见下一节
 
-## 「我」页（v1.1.1）
+## 「我」页（v1.1.2）
+
+> 1.1.1 因缺少页面容器 `<section id="page-me">`，点「我」会整页空白，已在 1.1.2 修复；请直接用 1.1.2。
 
 右下角第 6 个标签页。登录后展示的是**整理过的个人项目清单**，不是 GitHub 网页的搬运。
 
@@ -45,10 +47,10 @@
 ## 测试
 
 ```bash
-node tests/test_me_page.js      # 39 项：登录态渲染 / 本地整理不发请求 / 写接口 method+path+body+鉴权头 / 删除二次确认 / 上传 sha 逻辑
+node tests/test_me_page.js      # 47 项：登录态渲染 / 本地整理不发请求 / 写接口 method+path+body+鉴权头 / 删除二次确认 / 上传 sha 逻辑
 ```
 
-用 Node 的 `vm` + DOM/fetch 桩跑，不需要真机、不发真实请求。
+用 Node 的 `vm` + DOM/fetch 桩跑，不需要真机、不发真实请求。DOM 桩是严格的：`getElementById` 只认静态 HTML 里出现过的 id（以及运行时 innerHTML 注入过的），缺节点会返回 null，所以 HTML 少写一个 `<section>` 会直接被「点我切换页面不抛异常」这条用例抓到。
 
 ## 构建
 
