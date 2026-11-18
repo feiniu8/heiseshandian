@@ -246,6 +246,24 @@ public class Bridge {
     }
 
     @JavascriptInterface
+    public String versionName() {
+        try {
+            return ctx.getPackageManager().getPackageInfo(ctx.getPackageName(), 0).versionName;
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    @JavascriptInterface
+    public int versionCode() {
+        try {
+            return ctx.getPackageManager().getPackageInfo(ctx.getPackageName(), 0).versionCode;
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    @JavascriptInterface
     public String downloadDir() {
         File dir = ctx.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
         return dir == null ? "" : dir.getAbsolutePath();

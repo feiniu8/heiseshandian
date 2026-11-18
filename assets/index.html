@@ -194,6 +194,16 @@ nav button.active{color:var(--accent)}
       <button class="btn ghost wide" id="btn-save-token">保存令牌</button>
       <p class="note" style="margin-top:8px">令牌只存在本机，不会上传。留空则使用匿名访问。</p>
     </div>
+    <div class="card" style="margin-top:10px">
+      <div style="font-size:13.5px;font-weight:700;margin-bottom:8px">软件更新</div>
+      <div class="kv"><span>当前版本</span><b id="cur-ver">—</b></div>
+      <div class="kv"><span>最新版本</span><b id="new-ver">—</b></div>
+      <p class="note" id="update-note">可手动检查更新，下载会走当前加速源。</p>
+      <button class="btn ghost wide" id="btn-check-update">检查更新</button>
+      <div class="switch-row" style="margin-top:10px"><span>启动时自动检查<small>每天最多一次</small></span>
+        <label class="sw"><input type="checkbox" id="auto-update"><i></i></label>
+      </div>
+    </div>
     <button class="btn primary wide" id="btn-ping">重新测速</button>
     <p class="note">镜像由第三方提供服务，若某个源下载失败，切换到「GitHub 直连」或其它源重试即可。测速结果仅代表当前网络。</p>
   </section>
@@ -576,6 +586,59 @@ function openRepoFromText(text){
     .catch(function(err){ openModal(target,repoFallback(target,err.message||'网络错误')); });
 }
 
+var UPDATE_REPO='feiniu8/black-lightning';
+
+function curVersion(){
+  try{ return Native.versionName()||'1.0.4'; }catch(e){ return '1.0.4'; }
+}
+function vparse(v){
+  return String(v||'').replace(/^v/i,'').split(/[.\-+]/).map(function(x){return parseInt(x,10)||0;});
+}
+function vcmp(a,b){
+  var x=vparse(a),y=vparse(b),n=Math.max(x.length,y.length);
+  for(var i=0;i<n;i++){ var d=(x[i]||0)-(y[i]||0); if(d!==0)return d>0?1:-1; }
+  return 0;
+}
+function downloadUpdate(url,name){
+  if(!url){toast('没有可用的安装包');return;}
+  startDownload(url,name||'black-lightning-update.apk',true);
+  closeModal();
+  setTab('downloads');
+  toast('已加入下载队列，完成后点「安装」');
+}
+function checkUpdate(silent){
+  if(el('update-note'))el('update-note').textContent='正在检查更新…';
+  ghFetch('/repos/'+UPDATE_REPO+'/releases/latest',8000)
+    .then(function(rel){
+      var tag=String(rel.tag_name||'').replace(/^v/i,'');
+      try{ localStorage.setItem('lastUpdateCheck',String(Date.now())); }catch(e){}
+      if(el('new-ver'))el('new-ver').textContent=tag||'未知';
+      if(tag&&vcmp(tag,curVersion())>0){
+        if(el('update-note'))el('update-note').textContent='发现新版本 '+tag;
+        var apk=null,as=rel.assets||[];
+        for(var i=0;i<as.length;i++){ if(/\.apk$/i.test(as[i].name||'')){apk=as[i];break;} }
+        var notes=String(rel.body||'').slice(0,400);
+        openModal('发现新版本 '+tag,
+          '<div class="kv"><span>当前版本</span><b>'+esc(curVersion())+'</b></div>'+
+          '<div class="kv"><span>最新版本</span><b>'+esc(tag)+'</b></div>'+
+          (notes?'<div class="note" style="white-space:pre-wrap;margin:12px 2px">'+esc(notes)+'</div>':'')+
+          (apk?'<button class="btn primary wide" style="margin-top:6px" onclick="downloadUpdate(\''+esc(apk.browser_download_url)+'\',\''+esc(apk.name)+'\')">加速下载安装包</button>':'')+
+          '<div style="display:flex;gap:8px;margin-top:10px">'+
+          '<button class="btn ghost" style="flex:1" onclick="openLink(\''+esc(rel.html_url)+'\')">站内打开发布页</button>'+
+          '<button class="btn ghost" style="flex:1" onclick="openExternal(\''+esc(rel.html_url)+'\')">浏览器打开</button></div>'+
+          '<p class="note">安装包会走当前加速源下载，完成后到「下载」页点安装即可覆盖旧版。</p>');
+      }else{
+        if(el('update-note'))el('update-note').textContent='已是最新版本 '+curVersion();
+        if(!silent)toast('已是最新版本 '+curVersion());
+      }
+    })
+    .catch(function(err){
+      var m='检查失败：'+(err.message||'网络错误');
+      if(el('update-note'))el('update-note').textContent=m;
+      if(!silent)toast(m);
+    });
+}
+
 function handleSmart(){
   var raw=(el('smart-url').value||'').trim();
   if(!raw){toast('请输入项目地址或下载链接');return;}
@@ -804,6 +867,18 @@ function init(){
     try{localStorage.setItem('accel',state.accel?'1':'0');}catch(e){}
     toast(state.accel?'已开启加速搜索':'已关闭加速搜索');
   };
+  if(el('cur-ver'))el('cur-ver').textContent=curVersion();
+  if(el('btn-check-update'))el('btn-check-update').onclick=function(){checkUpdate(false);};
+  try{
+    var au=localStorage.getItem('autoUpdate')!=='0';
+    if(el('auto-update'))el('auto-update').checked=au;
+    if(el('auto-update'))el('auto-update').onchange=function(){
+      try{localStorage.setItem('autoUpdate',this.checked?'1':'0');}catch(e){}
+      toast(this.checked?'已开启自动检查更新':'已关闭自动检查更新');
+    };
+    var lastCheck=parseInt(localStorage.getItem('lastUpdateCheck')||'0',10);
+    if(au&&Date.now()-lastCheck>86400000){ setTimeout(function(){checkUpdate(true);},4500); }
+  }catch(e){}
   el('btn-save-token').onclick=function(){
     state.token=(el('gh-token').value||'').trim();
     try{localStorage.setItem('token',state.token);}catch(e){}
