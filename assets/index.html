@@ -586,10 +586,10 @@ function openRepoFromText(text){
     .catch(function(err){ openModal(target,repoFallback(target,err.message||'网络错误')); });
 }
 
-var UPDATE_REPO='feiniu8/black-lightning';
+var UPDATE_REPO='feiniu8/heiseshandian';
 
 function curVersion(){
-  try{ return Native.versionName()||'1.0.4'; }catch(e){ return '1.0.4'; }
+  try{ return Native.versionName()||'1.0.6'; }catch(e){ return '1.0.6'; }
 }
 function vparse(v){
   return String(v||'').replace(/^v/i,'').split(/[.\-+]/).map(function(x){return parseInt(x,10)||0;});
