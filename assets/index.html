@@ -115,7 +115,39 @@ nav button.active{color:var(--accent)}
 #toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(10px);background:#1e232d;color:#f2f4f8;font-size:13px;padding:11px 18px;border-radius:999px;border:1px solid #2c3341;opacity:0;transition:.22s;z-index:80;max-width:86%;text-align:center}
 #toast.show{opacity:1;transform:translateX(-50%)}
 .badge{display:inline-block;font-size:10.5px;padding:2px 7px;border-radius:6px;background:#1c212b;color:#9aa2b1;margin-left:6px}
+.badge.warn{background:#2a2313;color:#ffd60a}
+.badge.priv{background:#2a1a1a;color:#ff8a8a}
 .note{font-size:11.5px;color:#6b7385;line-height:1.7;margin:10px 2px 0}
+textarea,select{width:100%;background:var(--card2);color:var(--txt);border:1px solid var(--line);border-radius:14px;padding:12px 13px;font-size:14px;font-family:inherit}
+textarea{min-height:110px;line-height:1.6;resize:vertical}
+select{appearance:none;font-size:14px}
+.field{font-size:12px;color:var(--muted);margin:14px 2px 7px;font-weight:700}
+/* ---------- 我 ---------- */
+.me-card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;margin-bottom:12px}
+.me-top{display:flex;align-items:center;gap:12px}
+.me-avatar{width:52px;height:52px;border-radius:16px;background:#1d222c;object-fit:cover;flex:none;border:1px solid var(--line)}
+.me-name{font-size:16.5px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.me-sub{font-size:11.5px;color:var(--muted);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.me-stats{display:flex;gap:16px;margin-top:12px;font-size:11px;color:var(--muted)}
+.me-stats b{display:block;color:var(--txt);font-size:14px;font-weight:800;margin-bottom:2px}
+.me-tiles{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px}
+.me-tile{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:13px;text-align:left;color:var(--txt)}
+.me-tile .t{font-size:13.5px;font-weight:800}
+.me-tile .s{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.5}
+.perm-warn{background:#191310;border:1px solid #4a3320;border-radius:16px;padding:13px;font-size:12.5px;color:#e6c68f;line-height:1.7;margin-bottom:12px}
+.me-tools{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+.me-tools select{flex:1;padding:10px 12px;font-size:12.5px;border-radius:12px}
+.mine-note{font-size:12.3px;color:#e8cf8f;background:#151309;border:1px solid #2c2716;border-radius:11px;padding:8px 10px;margin:10px 0 0;line-height:1.6;word-break:break-all}
+.mine-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
+.mine-actions .btn{flex:1;min-width:31%;padding:9px 0;font-size:12px;text-align:center}
+.file-row{display:flex;align-items:center;gap:10px;border-bottom:1px solid #1c212b;padding:10px 0}
+.file-row .fn{flex:1;min-width:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file-row .fs{font-size:11px;color:var(--muted);flex:none}
+.file-row .btn{flex:none;padding:7px 10px;font-size:11.5px}
+.crumb{font-size:11.5px;color:var(--muted);margin:2px 2px 10px;word-break:break-all}
+.up-preview{background:#0e1117;border:1px solid var(--line);border-radius:12px;padding:11px;font-size:12px;color:#b6bdcb;margin-top:9px;line-height:1.6;word-break:break-all}
+.danger-text{color:var(--danger)}
+nav button{flex:1;background:transparent;color:#7b8494;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;font-weight:600;padding:6px 0;border-radius:12px}
 </style>
 </head>
 <body>
@@ -224,6 +256,7 @@ nav button.active{color:var(--accent)}
   <button data-tab="downloads"><svg viewBox="0 0 24 24"><path d="M12 4v10"/><path d="M7 11l5 5 5-5"/><path d="M4 20h16"/></svg>下载</button>
   <button data-tab="mirror"><svg viewBox="0 0 24 24"><path d="M13 2L5 14h6l-2 8 8-12h-6z"/></svg>加速源</button>
   <button data-tab="favs"><svg viewBox="0 0 24 24"><path d="M12 3.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></svg>收藏</button>
+  <button data-tab="me"><svg viewBox="0 0 24 24"><circle cx="12" cy="8.4" r="3.7"/><path d="M4.6 20.2c1.1-3.9 4-5.9 7.4-5.9s6.3 2 7.4 5.9"/></svg>我</button>
 </nav>
 
 <div id="modal"><div class="modal-mask" onclick="closeModal()"></div>
@@ -322,7 +355,7 @@ function updateMirrorChip(){
 
 function ghFetch(path,timeoutMs){
   var direct='https://api.github.com'+path;
-  var token=(state.token||'').trim();
+  var token=((typeof activeToken==='function')?activeToken():'')||(state.token||'').trim();
   var attempts=[];
   attempts.push({url:direct,token:!!token});
   if(token)attempts.push({url:direct,token:false});
@@ -958,16 +991,703 @@ window.onPing=function(id,ms,ok,code){
   renderMirrors();updateMirrorChip();
 };
 
+/* ================= 我（GitHub 账号 · 个人项目整理） ================= */
+/* 发布包构建时会把下面这行替换成已注册 OAuth App 的 client_id；仓库里保持为空 */
+var OAUTH_CLIENT_ID='';
+var OAUTH_SCOPES='repo read:user user:email gist';
+var ME_META_KEY='me_meta_v1',ME_GONE_KEY='me_gone_v1',ME_ORDER_KEY='me_order_v1';
+var MS={me:null,repos:[],orgs:[],mode:'mine',cat:'all',sort:'pushed',showHidden:false,loaded:false,loading:false,error:'',device:null,pick:null,anon:''};
+
+function lsGet(k){try{return localStorage.getItem(k)||'';}catch(e){return '';}}
+function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+function lsDel(k){try{localStorage.removeItem(k);}catch(e){}}
+function oauthToken(){return lsGet('oauth_token').trim();}
+function activeToken(){return oauthToken()||(state.token||'').trim();}
+function meClientId(){return (lsGet('oauth_client')||OAUTH_CLIENT_ID||'').trim();}
+function utf8ToB64(s){try{return btoa(unescape(encodeURIComponent(s)));}catch(e){try{return btoa(s);}catch(e2){return '';}}}
+function b64ToUtf8(b){var raw='';try{raw=atob(String(b||'').replace(/\s/g,''));}catch(e){return '';}try{return decodeURIComponent(escape(raw));}catch(e2){return raw;}}
+function encPath(p){return String(p||'').split('/').filter(function(x){return x!=='';}).map(function(x){return encodeURIComponent(x);}).join('/');}
+function mergeObj(base,patch){var o=base||{},k;for(k in patch){if(Object.prototype.hasOwnProperty.call(patch,k))o[k]=patch[k];}return o;}
+function meMeta(){return loadJSON(ME_META_KEY,{});}
+function metaOf(full){return meMeta()[full]||null;}
+function setMeta(full,patch){var m=meMeta();m[full]=mergeObj(m[full],patch);saveJSON(ME_META_KEY,m);}
+function meCatOf(r){var m=metaOf(r.full_name);return (m&&m.cat&&m.cat!=='auto')?m.cat:r.cat;}
+function meOrder(){return loadJSON(ME_ORDER_KEY,[]);}
+function goneList(){return loadJSON(ME_GONE_KEY,[]);}
+function normalizeMine(r){
+  var n=normalize(r);
+  n.private=!!r.private;n.fork=!!r.fork;n.archived=!!r.archived;
+  n.org=!!(r.owner&&String(r.owner.type||'').toLowerCase()==='organization');
+  n.pushed=r.pushed_at||r.updated_at||'';n.created=r.created_at||'';
+  n.homepage=r.homepage||'';n.size=r.size||0;n.sha='';
+  return n;
+}
+function mineRepo(full){for(var i=0;i<MS.repos.length;i++){if(MS.repos[i].full_name===full)return MS.repos[i];}return null;}
+
+/* ---------- 写操作（PATCH / PUT / DELETE 必须带令牌直连） ---------- */
+function ghSend(method,path,body,timeoutMs){
+  var token=activeToken();
+  if(!token)return Promise.reject(new Error('请先在「我」页登录 GitHub'));
+  var headers={'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'};
+  var opts={method:method,headers:headers};
+  if(body!==undefined&&body!==null){headers['Content-Type']='application/json';opts.body=JSON.stringify(body);}
+  var ctrl=('AbortController' in window)?new AbortController():null;
+  if(ctrl)opts.signal=ctrl.signal;
+  var timer=setTimeout(function(){if(ctrl)ctrl.abort();},timeoutMs||15000);
+  return fetch('https://api.github.com'+path,opts).then(function(r){
+    clearTimeout(timer);
+    if(r.status===204||r.status===205)return {ok:true,status:r.status};
+    return r.text().then(function(txt){
+      var j=null;try{j=txt?JSON.parse(txt):null;}catch(e){}
+      var msg=(j&&j.message)?j.message:('接口返回 '+r.status);
+      if(r.status===401)throw new Error('登录已失效或令牌权限不足（需要 repo 权限），请到「我」页重新登录');
+      if(r.status===403)throw new Error('权限不足或被 GitHub 拒绝：'+msg);
+      if(r.status===404)throw new Error('找不到目标（404）：'+msg);
+      if(r.status===422)throw new Error('数据校验未通过：'+msg);
+      if(!r.ok)throw new Error(msg);
+      return j||{ok:true};
+    });
+  }).catch(function(e){
+    clearTimeout(timer);
+    if(e&&String(e.name)==='AbortError')throw new Error('请求超时，请检查网络后重试');
+    throw e;
+  });
+}
+
+/* ---------- 登录：OAuth 设备码优先，令牌兜底 ---------- */
+function meLoginHtml(){
+  var cid=meClientId();
+  return '<div class="me-card">'+
+    '<div style="font-size:15.5px;font-weight:800">用 GitHub 账号登录</div>'+
+    '<p class="note" style="margin:7px 0 0">授权后只在本机保存访问令牌，用于读取并整理你自己的项目；黑色闪电没有任何服务器，令牌不会上传给第三方。</p>'+
+    '<div class="kv" style="margin-top:10px"><span>申请权限</span><b>'+esc(OAUTH_SCOPES)+'</b></div>'+
+    '<button class="btn primary wide" style="margin-top:12px" onclick="deviceLogin()">'+(cid?'用 GitHub 账号登录':'用 GitHub 账号登录（需先配 client_id）')+'</button>'+
+    '<button class="btn ghost wide" style="margin-top:9px" onclick="showMeToken()">用访问令牌登录</button>'+
+    '<div id="me-token-box" style="display:none">'+
+      '<div class="field">Personal Access Token</div>'+
+      '<input id="me-token" placeholder="ghp_xxx 或 github_pat_xxx" autocomplete="off" autocapitalize="off" autocorrect="off">'+
+      '<div class="field">OAuth App 的 client_id（可选）</div>'+
+      '<input id="me-oauth-cid" placeholder="填入后即可使用上面的 OAuth 登录" autocomplete="off" autocapitalize="off">'+
+      '<p class="note" style="margin-top:8px">令牌在 GitHub「Settings → Developer settings → Personal access tokens → Tokens (classic)」生成，勾选 <b>repo</b>、<b>read:user</b>、<b>gist</b> 才能编辑删除；只读用 <b>public_repo</b> 也够。令牌只写入本机 localStorage。</p>'+
+      '<button class="btn primary wide" onclick="saveMeToken()">保存并登录</button>'+
+    '</div>'+
+    '<div class="field">不想登录？先看公开项目</div>'+
+    '<div class="searchbox" style="margin:0"><input id="me-anon" placeholder="GitHub 用户名" autocomplete="off" style="border-radius:13px"><button class="btn ghost" onclick="loadMeAs()">浏览</button></div>'+
+    '<p class="note">匿名浏览只能看到公开仓库，不能编辑、删除或上传。</p>'+
+  '</div>';
+}
+function showMeToken(){
+  var b=el('me-token-box');if(!b)return;
+  b.style.display=(b.style.display==='none'||!b.style.display)?'block':'none';
+  if(el('me-token'))el('me-token').value=state.token||'';
+  if(el('me-oauth-cid'))el('me-oauth-cid').value=lsGet('oauth_client')||'';
+}
+function saveMeToken(){
+  var t=(el('me-token').value||'').trim();
+  var cid=(el('me-oauth-cid').value||'').trim();
+  if(cid)lsSet('oauth_client',cid);
+  lsDel('oauth_token');
+  state.token=t;lsSet('token',t);
+  if(el('gh-token'))el('gh-token').value=t;
+  MS.me=null;MS.repos=[];MS.orgs=[];MS.loaded=false;MS.error='';MS.anon='';
+  if(!t){renderMe();toast('已清除令牌');return;}
+  toast('令牌已保存，正在读取账号…');
+  loadMe(true);
+}
+function deviceLogin(){
+  var cid=meClientId();
+  if(!cid){
+    toast('这个安装包没有内置 OAuth client_id，先用令牌登录');
+    showMeToken();
+    if(el('me-token-box'))el('me-token-box').style.display='block';
+    return;
+  }
+  openModal('用 GitHub 账号登录','<div class="loading"><div class="spin"></div>正在向 GitHub 申请设备码…</div>');
+  fetch('https://github.com/login/device/code',{
+    method:'POST',
+    headers:{'Accept':'application/json','Content-Type':'application/x-www-form-urlencoded'},
+    body:'client_id='+encodeURIComponent(cid)+'&scope='+encodeURIComponent(OAUTH_SCOPES)
+  }).then(function(r){return r.json();}).then(function(d){
+    if(!d||!d.device_code){closeModal();toast('申请设备码失败：'+((d&&d.error)||'未知错误'));return;}
+    MS.device={code:d.device_code,interval:(d.interval||5),n:0,user:(d.verification_uri||'https://github.com/login/device')};
+    MS.device.user_url=(d.verification_uri_complete||d.verification_uri||'https://github.com/login/device');
+    openModal('用 GitHub 账号登录',
+      '<p class="note" style="margin:0 0 4px">下面这个 8 位口令不是密码。点「打开授权页」，在 GitHub 里输入它并确认授权，软件会自动完成登录。</p>'+
+      '<div class="oauth-code" style="font-size:26px;font-weight:800;letter-spacing:5px;text-align:center;background:#0e1117;border:1px dashed #3a4150;border-radius:14px;padding:16px;margin:12px 0;color:var(--accent)">'+esc(d.user_code||'')+'</div>'+
+      '<div class="kv"><span>授权地址</span><b>'+esc(d.verification_uri||'https://github.com/login/device')+'</b></div>'+
+      '<div class="kv"><span>有效期</span><b>约 '+Math.round((d.expires_in||900)/60)+' 分钟</b></div>'+
+      '<div style="display:flex;gap:8px;margin-top:14px">'+
+      '<button class="btn ghost" style="flex:1" onclick="Native.copyText(\''+esc(d.user_code||'')+'\')">复制口令</button>'+
+      '<button class="btn primary" style="flex:1.3" onclick="openLink(\''+esc(d.verification_uri||'https://github.com/login/device')+'\')">打开授权页</button></div>'+
+      '<div id="dev-status"><div class="loading" style="padding:16px 0 0"><div class="spin"></div>等待你在 GitHub 完成授权…</div></div>'+
+      '<button class="btn ghost wide" style="margin-top:8px" onclick="cancelDeviceLogin()">取消</button>');
+    pollDevice();
+  }).catch(function(e){closeModal();toast('申请设备码失败：'+(e.message||'网络错误'));});
+}
+function cancelDeviceLogin(){MS.device=null;closeModal();}
+function pollDevice(){
+  var d=MS.device;if(!d)return;
+  d.n++;
+  if(d.n>170){MS.device=null;toast('登录超时，请重新发起');closeModal();return;}
+  setTimeout(function(){
+    if(!MS.device)return;
+    fetch('https://github.com/login/oauth/access_token',{
+      method:'POST',
+      headers:{'Accept':'application/json','Content-Type':'application/x-www-form-urlencoded'},
+      body:'client_id='+encodeURIComponent(meClientId())+'&grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code&device_code='+encodeURIComponent(d.code)
+    }).then(function(r){return r.json();}).then(function(t){
+      if(!MS.device)return;
+      if(t&&t.access_token){
+        MS.device=null;
+        lsSet('oauth_token',t.access_token);
+        try{closeModal();}catch(e){}
+        toast('GitHub 登录成功');
+        MS.me=null;MS.repos=[];MS.orgs=[];MS.loaded=false;MS.error='';MS.anon='';
+        loadMe(true);
+        return;
+      }
+      var err=t&&t.error;
+      if(err==='authorization_pending'){setDevStatus('等待你在 GitHub 完成授权…');pollDevice();return;}
+      if(err==='slow_down'){d.interval=(d.interval||5)+5;setDevStatus('请求过于频繁，已放慢等待…');pollDevice();return;}
+      MS.device=null;
+      toast('登录未完成：'+((t&&t.error_description)||err||'已取消'));
+      closeModal();
+    }).catch(function(){
+      if(!MS.device)return;
+      setDevStatus('网络波动，继续重试…');
+      pollDevice();
+    });
+  },(d.interval||5)*1000);
+}
+function setDevStatus(msg){
+  var n=el('dev-status');
+  if(n)n.innerHTML='<div class="loading" style="padding:16px 0 0"><div class="spin"></div>'+esc(msg)+'</div>';
+}
+function meLogout(){
+  lsDel('oauth_token');
+  state.token='';lsSet('token','');
+  if(el('gh-token'))el('gh-token').value='';
+  MS.me=null;MS.repos=[];MS.orgs=[];MS.loaded=false;MS.error='';MS.anon='';
+  renderMe();toast('已退出登录，本机令牌已清除');
+}
+
+/* ---------- 读取账号与仓库 ---------- */
+function fetchMyRepos(page,acc){
+  var base=MS.anon?('/users/'+encodeURIComponent(MS.anon)+'/repos'):('/user/repos?affiliation=owner,collaborator,organization_member');
+  var url=base+(base.indexOf('?')>=0?'&':'?')+'per_page=100&sort=pushed&direction=desc&page='+page;
+  return ghFetch(url,14000).then(function(list){
+    acc=acc.concat(list||[]);
+    if((list||[]).length===100&&page<10)return fetchMyRepos(page+1,acc);
+    return acc;
+  });
+}
+function loadOrgs(login){
+  if(!login){MS.orgs=[];return;}
+  var p=MS.anon?('/users/'+encodeURIComponent(login)+'/orgs'):'/user/orgs';
+  ghFetch(p,9000).then(function(list){
+    MS.orgs=(list||[]).map(function(o){return o.login;});
+    renderMe();
+  }).catch(function(){MS.orgs=[];});
+}
+function loadMeAs(){
+  var name=(el('me-anon').value||'').trim().replace(/^@/,'').replace(/\/+$/,'');
+  if(!/^[\w.-]+$/.test(name)){toast('请输入合法的 GitHub 用户名');return;}
+  MS.anon=name;MS.me=null;MS.repos=[];MS.orgs=[];MS.loaded=false;MS.error='';
+  loadMe(true);
+}
+function loadMe(force){
+  if(MS.loading)return;
+  if(!MS.anon&&!activeToken()){renderMe();return;}
+  if(MS.loaded&&!force){renderMe();return;}
+  MS.loading=true;MS.error='';
+  renderMe();
+  var meJob=MS.anon?ghFetch('/users/'+encodeURIComponent(MS.anon),10000):ghFetch('/user',10000);
+  meJob.then(function(u){
+    MS.me=u;
+    loadOrgs(u&&u.login);
+    return fetchMyRepos(1,[]);
+  }).then(function(list){
+    var gone=goneList();
+    MS.repos=(list||[]).map(normalizeMine).filter(function(r){return gone.indexOf(r.full_name)<0;});
+    MS.loaded=true;MS.loading=false;
+    renderMe();
+  }).catch(function(e){
+    MS.loading=false;
+    if(!MS.anon&&e&&e.status===401){
+      lsDel('oauth_token');MS.me=null;MS.repos=[];MS.loaded=false;
+      toast('登录已失效，请重新登录');
+    }else{
+      MS.error=(e&&e.message)||'读取失败，请稍后重试';
+    }
+    renderMe();
+  });
+}
+
+/* ---------- 列表整理 ---------- */
+function meHiddenCount(){var m=meMeta(),n=0,k;for(k in m){if(m[k]&&m[k].hidden)n++;}return n;}
+function meList(){
+  var m=meMeta(),arr=MS.repos.slice();
+  if(MS.mode==='mine')arr=arr.filter(function(r){return !r.org;});
+  else if(MS.mode==='org')arr=arr.filter(function(r){return r.org;});
+  if(!MS.showHidden)arr=arr.filter(function(r){return !(m[r.full_name]&&m[r.full_name].hidden);});
+  if(MS.cat!=='all')arr=arr.filter(function(r){return meCatOf(r)===MS.cat;});
+  if(MS.sort==='name')arr.sort(function(a,b){return a.name<b.name?-1:(a.name>b.name?1:0);});
+  else if(MS.sort==='stars')arr.sort(function(a,b){return b.stars-a.stars;});
+  else if(MS.sort==='created')arr.sort(function(a,b){return String(b.created).localeCompare(String(a.created));});
+  else if(MS.sort==='custom'){
+    var ord=meOrder();
+    arr.sort(function(a,b){
+      var ia=ord.indexOf(a.full_name),ib=ord.indexOf(b.full_name);
+      if(ia<0&&ib<0)return 0;if(ia<0)return 1;if(ib<0)return -1;return ia-ib;
+    });
+  }else arr.sort(function(a,b){return String(b.pushed).localeCompare(String(a.pushed));});
+  return arr;
+}
+function meCounts(){var l=MS.repos.slice(),c={},i;for(i=0;i<l.length;i++){var k=meCatOf(l[i]);c[k]=(c[k]||0)+1;}return c;}
+function moveMine(full,dir){
+  var ord=meOrder(),i=ord.indexOf(full);
+  if(i<0){ord.unshift(full);i=0;}
+  var j=i+dir;
+  if(j<0||j>=ord.length){saveJSON(ME_ORDER_KEY,ord);renderMe();return;}
+  ord.splice(i,1);ord.splice(j,0,full);
+  saveJSON(ME_ORDER_KEY,ord);renderMe();
+}
+
+function meProfileHtml(){
+  var u=MS.me||{};
+  var login=u.login||MS.anon||'';
+  var totalStars=0,i;
+  for(i=0;i<MS.repos.length;i++)totalStars+=MS.repos[i].stars||0;
+  var kind=u.type==='Organization'?'组织账号':(u.name?'个人账号':'账号');
+  return '<div class="me-card">'+
+    '<div class="me-top"><img class="me-avatar" src="'+esc(u.avatar_url||'')+'" alt="" onerror="this.style.display=\'none\'">'+
+      '<div class="grow" style="min-width:0"><div class="me-name">'+esc(u.name||login)+'</div>'+
+      '<div class="me-sub">@'+esc(login)+' · '+esc(kind)+(MS.anon?' · 匿名浏览':'')+'</div></div></div>'+
+    (u.bio?'<div class="desc" style="display:block;-webkit-line-clamp:unset;margin:12px 0 0">'+esc(u.bio)+'</div>':'')+
+    '<div class="me-stats">'+
+      '<div><b>'+MS.repos.length+'</b>可见仓库</div>'+
+      '<div><b>'+fmt(totalStars)+'</b>Star 合计</div>'+
+      '<div><b>'+MS.orgs.length+'</b>所在组织</div>'+
+      '<div><b>'+fmt(u.followers||0)+'</b>关注者</div>'+
+    '</div>'+
+    (MS.orgs.length?'<div class="kv" style="margin-top:12px"><span>所在组织</span><b>'+esc(MS.orgs.slice(0,6).join('、'))+(MS.orgs.length>6?' 等':'')+'</b></div>':'')+
+    (u.created_at?'<div class="kv" style="margin-top:12px"><span>加入 GitHub</span><b>'+esc(String(u.created_at).slice(0,10))+'</b></div>':'')+
+    (u.email?'<div class="kv"><span>邮箱</span><b>'+esc(u.email)+'</b></div>':'')+
+    '<div style="display:flex;gap:8px;margin-top:14px">'+
+      '<button class="btn ghost" style="flex:1" onclick="openLink(\''+esc(u.html_url||('https://github.com/'+login))+'\')">GitHub 主页</button>'+
+      '<button class="btn ghost" style="flex:1" onclick="loadMe(true)">刷新</button>'+
+      (MS.anon?'<button class="btn primary" style="flex:1" onclick="exitAnon()">去登录</button>':'<button class="btn ghost" style="flex:1;color:#ff8a8a" onclick="meLogout()">退出</button>')+
+    '</div>'+
+    (activeToken()&&!oauthToken()?'<p class="note" style="margin-top:9px">当前使用手动令牌登录，权限范围取决于令牌本身的勾选。</p>':'')+
+  '</div>';
+}
+function exitAnon(){MS.anon='';MS.me=null;MS.repos=[];MS.orgs=[];MS.loaded=false;MS.error='';renderMe();}
+
+function mineCard(r){
+  var c=catInfo(meCatOf(r)),m=metaOf(r.full_name)||{};
+  var badges='';
+  if(r.private)badges+='<span class="badge priv">私有</span>';
+  if(r.fork)badges+='<span class="badge">Fork</span>';
+  if(r.org)badges+='<span class="badge">组织</span>';
+  if(r.archived)badges+='<span class="badge">已归档</span>';
+  if(m.hidden)badges+='<span class="badge warn">已隐藏</span>';
+  var note=(m.note||'').trim();
+  var sortBtns=(MS.sort==='custom')?
+     '<button class="btn ghost" onclick="moveMine(\''+esc(r.full_name)+'\',-1)">↑ 上移</button>'+
+     '<button class="btn ghost" onclick="moveMine(\''+esc(r.full_name)+'\',1)">↓ 下移</button>'+
+     '<button class="btn ghost" onclick="meMenu(\''+esc(r.full_name)+'\')">更多 ⋯</button>':'';
+  return '<div class="card"'+(m.hidden?' style="opacity:.55"':'')+'>'+
+    '<div class="card-top"><div class="avatar" style="color:'+c.color+'">'+esc((r.name||'?').slice(0,1).toUpperCase())+'</div>'+
+      '<div class="grow"><div class="repo-name">'+esc(r.name)+badges+'</div>'+
+      '<div class="repo-owner">'+esc(r.owner)+' · ★ '+fmt(r.stars)+' · 推送 '+timeAgo(r.pushed)+'</div></div></div>'+
+    '<div class="desc">'+esc(r.description||'暂无项目简介')+'</div>'+
+    '<div class="tags"><span class="tag" style="color:'+c.color+';border-color:'+c.color+'55">'+esc(catInfo(meCatOf(r)).name)+'</span>'+
+      (r.language?'<span class="tag">'+esc(r.language)+'</span>':'')+
+      '<span class="tag">'+(r.private?'私有':'公开')+'</span></div>'+
+    (note?'<div class="mine-note">备注：'+esc(note)+'</div>':'')+
+    '<div class="mine-actions">'+
+      '<button class="btn primary" onclick="meEditDialog(\''+esc(r.full_name)+'\')">整理</button>'+
+      '<button class="btn ghost" onclick="meFiles(\''+esc(r.full_name)+'\',\'\')">文件</button>'+
+      '<button class="btn ghost" onclick="meUploadDialog(\''+esc(r.full_name)+'\',\'\')">上传</button>'+
+    '</div>'+
+    '<div class="mine-actions">'+
+      (sortBtns||'<button class="btn ghost" onclick="meMenu(\''+esc(r.full_name)+'\')">更多操作 ⋯</button>')+
+    '</div></div>';
+}
+function meChipsHtml(){
+  var mine=0,org=0,i;
+  for(i=0;i<MS.repos.length;i++){if(MS.repos[i].org)org++;else mine++;}
+  var html='<div class="chips">'+
+    '<button class="chip '+(MS.mode==='mine'?'active':'')+'" onclick="setMeMode(\'mine\')">我的<b>'+mine+'</b></button>'+
+    '<button class="chip '+(MS.mode==='org'?'active':'')+'" onclick="setMeMode(\'org\')">'+(MS.orgs.length?'组织项目':'组织（无）')+'<b>'+org+'</b></button>'+
+    '<button class="chip '+(MS.mode==='all'?'active':'')+'" onclick="setMeMode(\'all\')">全部<b>'+MS.repos.length+'</b></button>'+
+    '<button class="chip '+(MS.showHidden?'active':'')+'" onclick="toggleMeHidden()">含隐藏<b>'+meHiddenCount()+'</b></button></div>';
+  var counts=meMeCountsForMode(),total=0;
+  html+='<div class="chips"><button class="chip '+(MS.cat==='all'?'active':'')+'" onclick="setMeCat(\'all\')">全部</button>';
+  for(i=0;i<CATS.length;i++){
+    var c=CATS[i],n=counts[c.id]||0;
+    if(!n)continue;total+=n;
+    html+='<button class="chip '+(MS.cat===c.id?'active':'')+'" onclick="setMeCat(\''+c.id+'\')">'+esc(c.name)+'<b>'+n+'</b></button>';
+  }
+  html+='</div>';
+  return html;
+}
+function meMeCountsForMode(){
+  var m=meMeta(),arr=MS.repos.slice(),c={},i;
+  if(MS.mode==='mine')arr=arr.filter(function(r){return !r.org;});
+  else if(MS.mode==='org')arr=arr.filter(function(r){return r.org;});
+  for(i=0;i<arr.length;i++){var k=meCatOf(arr[i]);c[k]=(c[k]||0)+1;}
+  return c;
+}
+function setMeMode(v){MS.mode=v;MS.cat='all';renderMe();}
+function setMeCat(v){MS.cat=v;renderMe();}
+function toggleMeHidden(){MS.showHidden=!MS.showHidden;renderMe();}
+function setMeSort(v){MS.sort=v;if(v==='custom'&&!meOrder().length){saveJSON(ME_ORDER_KEY,meList().map(function(r){return r.full_name;}));}renderMe();}
+
+function meBodyHtml(){
+  var html='';
+  if(MS.error)html+='<div class="perm-warn">⚡ '+esc(MS.error)+'<br><span style="opacity:.8">可到「加速源」检查令牌，或限流稍后再试；镜像不代理写接口。</span></div>';
+  html+='<div class="me-tiles">'+
+    '<button class="me-tile" onclick="meCreateDialog()"><div class="t">＋ 新建仓库</div><div class="s">在 GitHub 上创建一个新仓库</div></button>'+
+    '<button class="me-tile" onclick="meUploadFromMine()"><div class="t">⇪ 快速上传</div><div class="s">挑一个仓库提交文件或文本</div></button>'+
+  '</div>';
+  html+=meChipsHtml();
+  var list=meList();
+  html+='<div class="me-tools"><select onchange="setMeSort(this.value)">'+
+    '<option value="pushed"'+(MS.sort==='pushed'?' selected':'')+'>按最近推送排序</option>'+
+    '<option value="name"'+(MS.sort==='name'?' selected':'')+'>按名称 A→Z</option>'+
+    '<option value="stars"'+(MS.sort==='stars'?' selected':'')+'>按 Star 多→少</option>'+
+    '<option value="created"'+(MS.sort==='created'?' selected':'')+'>按创建时间新→旧</option>'+
+    '<option value="custom"'+(MS.sort==='custom'?' selected':'')+'>自定义顺序（可上下调）</option>'+
+    '</select></div>';
+  if(!MS.repos.length){
+    html+='<div class="empty"><span class="big">🗂</span>'+(MS.loading?'正在读取…':'没有读取到仓库')+(MS.anon?'':'<br><span style="font-size:12px">令牌需要 repo 权限才能看到私有仓库</span>')+'</div>';
+    return html;
+  }
+  if(!list.length){
+    html+='<div class="empty"><span class="big">🐈‍⬛</span>该筛选条件下没有项目，试试「含隐藏」或换个分类</div>';
+    return html;
+  }
+  html+='<div class="meta-line"><span>'+list.length+' 个项目</span><span class="dot"></span><span>整理数据只存本机</span></div>';
+  for(var i=0;i<list.length;i++)html+=mineCard(list[i]);
+  return html;
+}
+function renderMe(){
+  var box=el('me-auth'),body=el('me-body');
+  if(!box||!body)return;
+  var tk=activeToken();
+  if(!tk&&!MS.anon){box.innerHTML=meLoginHtml();body.innerHTML='';return;}
+  if(MS.loading&&!MS.me){
+    box.innerHTML='<div class="me-card"><div class="loading" style="padding:10px 0"><div class="spin"></div>'+(MS.anon?'正在读取 '+esc(MS.anon)+' 的公开项目…':'正在校验登录并读取账号…')+'</div></div>';
+    body.innerHTML='';return;
+  }
+  box.innerHTML=MS.me?meProfileHtml():meLoginHtml();
+  body.innerHTML=MS.me?meBodyHtml():'';
+}
+
+/* ---------- 本地整理：备注 / 分类 / 隐藏 ---------- */
+function meEditDialog(full){
+  var r=mineRepo(full);if(!r){toast('项目信息已失效');return;}
+  var m=metaOf(full)||{};
+  var opts='<option value="auto"'+((!m.cat||m.cat==='auto')?' selected':'')+'>自动分类（'+esc(catInfo(r.cat).name)+'）</option>';
+  for(var i=0;i<CATS.length;i++){opts+='<option value="'+CATS[i].id+'"'+(m.cat===CATS[i].id?' selected':'')+'>'+esc(CATS[i].name)+'</option>';}
+  openModal('整理 · '+r.name,
+    '<div class="kv"><span>仓库</span><b>'+esc(r.full_name)+'</b></div>'+
+    '<div class="field">备注（只存本机，不写回 GitHub）</div>'+
+    '<textarea id="me-note" placeholder="例如：2026-11 重构中 / 已停更 / 面试作品集">'+esc(m.note||'')+'</textarea>'+
+    '<div class="field">自定义分类</div><select id="me-cat">'+opts+'</select>'+
+    '<div class="switch-row" style="margin-top:16px"><span>在列表中隐藏<small>隐藏后仍可在「含隐藏」里找回</small></span>'+
+      '<label class="sw"><input type="checkbox" id="me-hidden"'+(m.hidden?' checked':'')+'><i></i></label></div>'+
+    '<button class="btn primary wide" onclick="meSaveMeta(\''+esc(full)+'\')">保存整理</button>'+
+    '<div class="card-actions" style="margin-top:9px">'+
+      '<button class="btn ghost sm" style="flex:1" onclick="meDescDialog(\''+esc(full)+'\')">改 GitHub 描述</button>'+
+      '<button class="btn ghost sm" style="flex:1" onclick="meMenu(\''+esc(full)+'\')">更多操作</button></div>');
+}
+function meSaveMeta(full){
+  setMeta(full,{note:(el('me-note').value||'').trim(),cat:el('me-cat').value,hidden:!!el('me-hidden').checked,ts:Date.now()});
+  closeModal();renderMe();toast('已保存整理（仅存本机）');
+}
+
+/* ---------- 更多操作（真实写回 GitHub） ---------- */
+function meMenu(full){
+  var r=mineRepo(full);if(!r){toast('项目信息已失效');return;}
+  openModal(r.name+' · 更多操作',
+    '<p class="note" style="margin:0 0 12px">下面几项会通过 GitHub 接口<b>真实修改</b>你的仓库，不是本地备注。</p>'+
+    '<div class="kv"><span>当前描述</span><b>'+esc(r.description||'（空）')+'</b></div>'+
+    '<div class="kv"><span>主页链接</span><b>'+esc(r.homepage||'（空）')+'</b></div>'+
+    '<button class="btn ghost wide" onclick="meDescDialog(\''+esc(full)+'\')">修改 GitHub 描述</button>'+
+    '<button class="btn ghost wide" style="margin-top:9px" onclick="meHomepageDialog(\''+esc(full)+'\')">修改主页链接</button>'+
+    '<button class="btn ghost wide" style="margin-top:9px" onclick="meArchive(\''+esc(full)+'\','+(r.archived?0:1)+')">'+(r.archived?'解除归档':'归档仓库（变只读）')+'</button>'+
+    '<button class="btn ghost wide" style="margin-top:9px" onclick="openLink(\''+esc(r.url)+'\')">在软件内打开仓库</button>'+
+    '<button class="btn primary wide" style="margin-top:9px" onclick="meFiles(\''+esc(full)+'\',\'\')">查看文件 / 上传</button>'+
+    '<button class="btn wide" style="margin-top:12px;background:#2a1518;border-color:#4d2228;color:#ff8a8a" onclick="meDeleteDialog(\''+esc(full)+'\')">删除整个仓库</button>'+
+    '<p class="note">删除仓库不可恢复，GitHub 也不提供找回。私有仓库需要令牌带 repo 权限。</p>');
+}
+function meDescDialog(full){
+  var r=mineRepo(full);if(!r)return;
+  openModal('修改 GitHub 描述',
+    '<div class="field">仓库描述（写回 GitHub 的项目简介）</div>'+
+    '<textarea id="gh-desc" placeholder="一句话说清这个项目是做什么的">'+esc(r.description||'')+'</textarea>'+
+    '<button class="btn primary wide" onclick="meSaveDesc(\''+esc(full)+'\')">保存到 GitHub</button>'+
+    '<p class="note">改完会立刻体现在 GitHub 仓库首页与搜索结果里。</p>');
+}
+function meSaveDesc(full){
+  var v=(el('gh-desc').value||'').trim();
+  closeModal();
+  toast('正在提交…');
+  ghSend('PATCH','/repos/'+full,{description:v}).then(function(){
+    var r=mineRepo(full);if(r)r.description=v;
+    renderMe();toast('描述已更新到 GitHub');
+  }).catch(function(e){toast('修改失败：'+(e.message||'未知错误'));});
+}
+function meHomepageDialog(full){
+  var r=mineRepo(full);if(!r)return;
+  openModal('修改主页链接',
+    '<div class="field">Homepage（留空则清除）</div>'+
+    '<input id="gh-home" placeholder="https://…" autocomplete="off" value="'+esc(r.homepage||'')+'">'+
+    '<button class="btn primary wide" onclick="meSaveHome(\''+esc(full)+'\')">保存到 GitHub</button>');
+}
+function meSaveHome(full){
+  var v=(el('gh-home').value||'').trim();
+  closeModal();toast('正在提交…');
+  ghSend('PATCH','/repos/'+full,{homepage:v}).then(function(){
+    var r=mineRepo(full);if(r)r.homepage=v;
+    renderMe();toast(v?'主页链接已更新':'已清除主页链接');
+  }).catch(function(e){toast('修改失败：'+(e.message||'未知错误'));});
+}
+function meArchive(full,flag){
+  closeModal();toast('正在提交…');
+  ghSend('PATCH','/repos/'+full,{archived:!!flag}).then(function(){
+    var r=mineRepo(full);if(r)r.archived=!!flag;
+    if(flag){MS.loaded=false;}
+    renderMe();toast(flag?'已归档，仓库变为只读':'已解除归档');
+    if(!flag)loadMe(true);
+  }).catch(function(e){toast(flag?'归档失败：'+e.message:'解除归档失败：'+e.message);});
+}
+function meDeleteDialog(full){
+  var r=mineRepo(full);if(!r){toast('项目信息已失效');return;}
+  openModal('删除仓库 · 不可恢复',
+    '<div class="perm-warn" style="margin-bottom:12px">这会把 <b>'+esc(full)+'</b> 连同全部代码、Issue、Star 一起从 GitHub 删除，无法恢复。</div>'+
+    '<div class="field">请输入完整仓库名确认（owner/repo）</div>'+
+    '<input id="del-confirm" placeholder="'+esc(full)+'" autocomplete="off" autocapitalize="off">'+
+    '<button class="btn wide" style="margin-top:12px;background:#2a1518;border-color:#4d2228;color:#ff8a8a" onclick="meDoDelete(\''+esc(full)+'\')">确认删除</button>'+
+    '<button class="btn ghost wide" style="margin-top:9px" onclick="closeModal()">取消</button>');
+}
+function meDoDelete(full){
+  var typed=(el('del-confirm').value||'').trim();
+  if(typed!==full){toast('输入的仓库名不一致，已取消');return;}
+  closeModal();toast('正在删除…');
+  ghSend('DELETE','/repos/'+full).then(function(){
+    var g=goneList();g.push(full);saveJSON(ME_GONE_KEY,g);
+    var keep=[];for(var i=0;i<MS.repos.length;i++){if(MS.repos[i].full_name!==full)keep.push(MS.repos[i]);}
+    MS.repos=keep;
+    var m=meMeta();if(m[full]){delete m[full];saveJSON(ME_META_KEY,m);}
+    renderMe();toast('已删除 '+full);
+  }).catch(function(e){toast('删除失败：'+(e.message||'未知错误'));});
+}
+function meCreateDialog(){
+  if(!activeToken()||MS.anon){toast('请先登录后再新建仓库');return;}
+  openModal('新建仓库',
+    '<div class="field">仓库名（必填）</div><input id="new-name" placeholder="my-new-project" autocomplete="off" autocapitalize="off">'+
+    '<div class="field">描述</div><input id="new-desc" placeholder="这个项目是做什么的" autocomplete="off">'+
+    '<div class="switch-row" style="margin-top:14px"><span>私有仓库<small>需要令牌带 repo 权限</small></span><label class="sw"><input type="checkbox" id="new-priv"><i></i></label></div>'+
+    '<div class="switch-row" style="margin-top:6px"><span>初始化 README<small>建好就有默认分支，可直接上传文件</small></span><label class="sw"><input type="checkbox" id="new-init" checked><i></i></label></div>'+
+    '<button class="btn primary wide" onclick="meCreateRepo()">在 GitHub 创建</button>');
+}
+function meCreateRepo(){
+  var name=(el('new-name').value||'').trim();
+  if(!/^[\w.-]{1,100}$/.test(name)){toast('仓库名只能含字母数字、-、_、.');return;}
+  var body={name:name,description:(el('new-desc').value||'').trim(),private:!!el('new-priv').checked,auto_init:!!el('new-init').checked};
+  closeModal();toast('正在创建…');
+  ghSend('POST','/user/repos',body).then(function(r){
+    toast('已创建 '+(r&&r.full_name||name));
+    MS.loaded=false;
+    loadMe(true);
+  }).catch(function(e){toast('创建失败：'+(e.message||'未知错误'));});
+}
+
+/* ---------- 文件浏览 / 编辑 / 删除 / 上传 ---------- */
+function meFiles(full,path){
+  path=path||'';
+  openModal('文件 · '+(full.split('/')[1]||full),'<div class="loading"><div class="spin"></div>正在读取目录…</div>');
+  ghFetch('/repos/'+full+'/contents/'+encPath(path),12000).then(function(data){
+    var rows=Array.isArray(data)?data:(data&&data.type==='dir'?data:[]);
+    if(!Array.isArray(rows)){
+      if(data&&data.type==='file'){meOpenFile(full,path,data);return;}
+      throw new Error('这个路径不是目录');
+    }
+    var dirs=[],files=[],i;
+    for(i=0;i<rows.length;i++){(rows[i].type==='dir'?dirs:files).push(rows[i]);}
+    dirs.sort(function(a,b){return a.name<b.name?-1:1;});
+    files.sort(function(a,b){return a.name<b.name?-1:1;});
+    var html='<div class="crumb">'+(path?'<button class="btn ghost sm" onclick="meFiles(\''+esc(full)+'\',\''+esc(path.split('/').slice(0,-1).join('/'))+'\')">← 返回上层</button>':'<span>根目录 · 分支 '+esc((mineRepo(full)||{}).branch||'main')+'</span>')+' / '+esc(path)+'</div>';
+    html+='<button class="btn primary wide" onclick="meUploadDialog(\''+esc(full)+'\',\''+esc(path)+'\')">⇪ 上传到这里</button>';
+    if(!dirs.length&&!files.length)html+='<p class="note" style="margin-top:14px">这个目录是空的，可以先上传一个文件。</p>';
+    for(i=0;i<dirs.length;i++){
+      html+='<div class="file-row"><div class="fn">📁 '+esc(dirs[i].name)+'</div><button class="btn ghost" onclick="meFiles(\''+esc(full)+'\',\''+esc(path?path+'/'+dirs[i].name:dirs[i].name)+'\')">进入</button></div>';
+    }
+    for(i=0;i<files.length;i++){
+      var f=files[i];
+      html+='<div class="file-row"><div class="fn">'+esc(f.name)+'</div><span class="fs">'+bytes(f.size||0)+'</span>'+
+        '<button class="btn ghost" onclick="meOpenFile(\''+esc(full)+'\',\''+esc(path?path+'/'+f.name:f.name)+'\')">打开</button>'+
+        '<button class="btn ghost" style="color:#ff8a8a" onclick="meDeleteFile(\''+esc(full)+'\',\''+esc(path?path+'/'+f.name:f.name)+'\',\''+esc(f.sha)+'\')">删</button></div>';
+    }
+    html+='<p class="note">单个文件上限约 25 MB（接口限制），大文件建议用 git 推送或 Release 附件。</p>';
+    openModal('文件 · '+(full.split('/')[1]||full),html);
+  }).catch(function(e){
+    openModal('文件 · '+(full.split('/')[1]||full),'<div class="empty" style="padding:26px 10px">'+esc(e.message||'读取失败')+'<br><span style="font-size:12px">仓库可能是空仓库（没有提交），先「上传」一个文件试试</span></div>');
+  });
+}
+function meOpenFile(full,path,data){
+  openModal('文件 · '+(path.split('/').pop()||path),'<div class="loading"><div class="spin"></div>读取文件内容…</div>');
+  var job=data?Promise.resolve(data):ghFetch('/repos/'+full+'/contents/'+encPath(path),12000);
+  job.then(function(f){
+    var isText=!/\.png$|\.jpg$|\.jpeg$|\.gif$|\.webp$|\.ico$|\.pdf$|\.zip$|\.apk$|\.gz$|\.mp4$|\.mp3$|\.woff2?$/i.test(path);
+    var text=(f.encoding==='base64'&&isText)?b64ToUtf8(f.content||''):'';
+    if(String(f.size||0)>900000)text='';
+    if(f.encoding==='base64'&&!isText)text='（二进制文件，不在此预览）';
+    if(String(f.size||0)>900000)text='（文件超过 900 KB，不在此预览，可用 GitHub 网页查看）';
+    openModal('文件 · '+(path.split('/').pop()||path),
+      '<div class="kv"><span>路径</span><b>'+esc(path)+'</b></div>'+
+      '<div class="kv"><span>大小</span><b>'+bytes(f.size||0)+'</b></div>'+
+      (isText&&String(f.size||0)<=900000
+        ? '<div class="field">内容（编辑后点保存会提交一次 commit）</div><textarea id="file-body" style="min-height:220px;font-family:ui-monospace,Menlo,monospace;font-size:12.5px">'+esc(text)+'</textarea>'
+        : '<div class="up-preview">'+esc(text||'无法预览')+'</div>')+
+      '<input id="file-msg" placeholder="commit message（可选）" style="margin-top:12px" autocomplete="off">'+
+      '<div style="display:flex;gap:8px;margin-top:12px">'+
+      '<button class="btn ghost" style="flex:1" onclick="meFiles(\''+esc(full)+'\',\''+esc(path.split('/').slice(0,-1).join('/'))+'\')">返回目录</button>'+
+      (isText&&String(f.size||0)<=900000?'<button class="btn primary" style="flex:1" onclick="meSaveFile(\''+esc(full)+'\',\''+esc(path)+'\',\''+esc(f.sha||'')+'\')">保存修改</button>':'')+
+      '</div>');
+  }).catch(function(e){toast('读取失败：'+(e.message||'网络错误'));});
+}
+function meSaveFile(full,path,sha){
+  var content=el('file-body').value||'';
+  var msg=(el('file-msg').value||'').trim()||('Update '+path);
+  closeModal();toast('正在提交…');
+  ghSend('PUT','/repos/'+full+'/contents/'+encPath(path),{message:msg,content:utf8ToB64(content),sha:sha||undefined}).then(function(){
+    toast('已提交到 GitHub：'+path);
+  }).catch(function(e){toast('提交失败：'+(e.message||'未知错误'));});
+}
+function meDeleteFile(full,path,sha){
+  openModal('删除文件',
+    '<div class="perm-warn" style="margin-bottom:12px">将从 GitHub 仓库 <b>'+esc(full)+'</b> 删除 <b>'+esc(path)+'</b>（会生成一次删除 commit，可从提交历史找回）。</div>'+
+    '<button class="btn wide" style="background:#2a1518;border-color:#4d2228;color:#ff8a8a" onclick="meDoDeleteFile(\''+esc(full)+'\',\''+esc(path)+'\',\''+esc(sha)+'\')">确认删除</button>'+
+    '<button class="btn ghost wide" style="margin-top:9px" onclick="meFiles(\''+esc(full)+'\',\''+esc(path.split('/').slice(0,-1).join('/'))+'\')">取消</button>');
+}
+function meDoDeleteFile(full,path,sha){
+  closeModal();toast('正在删除…');
+  ghSend('DELETE','/repos/'+full+'/contents/'+encPath(path),{message:'Delete '+path,sha:sha}).then(function(){
+    toast('已删除 '+path);
+    meFiles(full,path.split('/').slice(0,-1).join('/'));
+  }).catch(function(e){toast('删除失败：'+(e.message||'未知错误'));});
+}
+function meUploadFromMine(){
+  if(!activeToken()||MS.anon){toast('请先登录后再上传');return;}
+  if(!MS.repos.length){toast('还没有可上传的仓库，先新建一个');return;}
+  var opts='';
+  var list=MS.repos.slice().sort(function(a,b){return String(b.pushed).localeCompare(String(a.pushed));}).slice(0,300);
+  for(var i=0;i<list.length;i++)opts+='<option value="'+esc(list[i].full_name)+'">'+esc(list[i].full_name)+'</option>';
+  openModal('快速上传','<div class="field">选择仓库</div><select id="up-pick-repo">'+opts+'</select>'+
+    '<button class="btn primary wide" onclick="meUploadPicked()">下一步：选择文件</button>');
+}
+function meUploadPicked(){
+  var s=el('up-pick-repo');
+  var full=s?(s.value||''):'';
+  if(!full){toast('请先选择仓库');return;}
+  meUploadDialog(full,'');
+}
+function meUploadDialog(full,path){
+  if(!activeToken()||MS.anon){toast('请先登录后再上传');return;}
+  if(!full){closeModal();meUploadFromMine();return;}
+  MS.pick=null;
+  path=path||'';
+  openModal('上传到 '+full,'<div class="loading"><div class="spin"></div>准备上传面板…</div>');
+  ghFetch('/repos/'+full,9000).then(function(r){
+    var branch=r.default_branch||'main';
+    var r2=mineRepo(full);if(r2)r2.branch=branch;
+    openModal('上传到 '+(full.split('/')[1]||full),
+      '<div class="kv"><span>目标分支</span><b>'+esc(branch)+'</b></div>'+
+      '<div class="field">文件路径（含目录，例如 docs/read me.md）</div>'+
+      '<input id="up-path" placeholder="'+esc(path)+'README.md" autocomplete="off" autocapitalize="off" value="'+esc(path)+'">'+
+      '<div class="field">或直接选一个本机文件</div>'+
+      '<button class="btn ghost wide" onclick="pickLocalFile()">选择本机文件</button>'+
+      '<div id="up-picked" class="up-preview" style="display:none"></div>'+
+      '<div class="field">或粘贴文本内容</div>'+
+      '<textarea id="up-content" placeholder="上传文本文件时填这里；选了本机文件则忽略"></textarea>'+
+      '<div class="field">commit message</div>'+
+      '<input id="up-msg" placeholder="Add files via Black Lightning" autocomplete="off">'+
+      '<button class="btn primary wide" onclick="meDoUpload(\''+esc(full)+'\')">提交到 GitHub</button>'+
+      '<p class="note">同名文件会被覆盖（自动带上原文件的 sha）；上传单文件上限约 2 MB。</p>');
+  }).catch(function(e){
+    openModal('上传到 '+(full.split('/')[1]||full),'<div class="empty" style="padding:26px 10px">'+esc(e.message||'读取仓库失败')+'</div>');
+  });
+}
+function pickLocalFile(){
+  var ok=false;
+  try{ if(window.Native&&Native.pickLocalFile){ Native.pickLocalFile(); ok=true; } }catch(e){ ok=false; }
+  if(!ok)toast('当前安装包不支持选本机文件，请改用文本内容上传');
+}
+window.onPickFile=function(name,mime,b64,size){
+  var box=el('up-picked');
+  if(!b64){
+    MS.pick=null;
+    if(box){box.style.display='block';box.textContent='未选择文件，可改用文本内容上传。';}
+    return;
+  }
+  if(size&&size>3*1024*1024){
+    if(box){box.style.display='block';box.textContent='文件 '+(size/1048576).toFixed(1)+' MB，超过 3 MB 上限，请改用 git 推送。';}
+    MS.pick=null;return;
+  }
+  MS.pick={name:name||'upload.bin',mime:mime||'',b64:String(b64).replace(/\s/g,''),size:size||0};
+  if(box){box.style.display='block';box.textContent='已选择：'+MS.pick.name+' · '+bytes(MS.pick.size)+'（提交时路径留空将使用该文件名）';}
+  var p=el('up-path');
+  if(p&&!(p.value||'').trim())p.value=MS.pick.name;
+};
+function meDoUpload(full){
+  var path=(el('up-path').value||'').trim().replace(/^\/+/,'');
+  var msg=(el('up-msg').value||'').trim()||'Upload via Black Lightning';
+  var b64='';
+  if(MS.pick){
+    b64=MS.pick.b64;
+    if(!path)path=MS.pick.name;
+  }else{
+    var content=el('up-content').value||'';
+    if(!content){toast('请选择文件，或填写文本内容');return;}
+    b64=utf8ToB64(content);
+  }
+  if(!path){toast('请填写文件路径');return;}
+  if(/[\\]/.test(path)){toast('路径不能包含反斜杠');return;}
+  if(b64.length>2800000){toast('内容超过 2 MB 上限，请拆分或用 git 推送');return;}
+  closeModal();toast('正在上传…');
+  var sha=null;
+  ghFetch('/repos/'+full+'/contents/'+encPath(path),12000).then(function(cur){
+    if(cur&&cur.sha)sha=cur.sha;
+    return null;
+  }).catch(function(){return null;}).then(function(){
+    var body={message:msg,content:b64};
+    if(sha)body.sha=sha;
+    return ghSend('PUT','/repos/'+full+'/contents/'+encPath(path),body,25000);
+  }).then(function(res){
+    toast((sha?'已覆盖 ':'已上传 ')+path);
+    MS.pick=null;
+    if(res&&res.commit&&res.commit.sha&&res.content){
+      var rr=mineRepo(full);
+      if(rr){ghFetch('/repos/'+full,9000).then(function(f){rr.pushed=f.pushed_at||rr.pushed;renderMe();}).catch(function(){});}
+    }
+  }).catch(function(e){toast('上传失败：'+(e.message||'未知错误'));});
+}
+
 /* ---------- tabs ---------- */
 function setTab(tab){
   state.tab=tab;
-  var pages={search:'page-search',direct:'page-direct',downloads:'page-downloads',mirror:'page-mirror',favs:'page-favs'};
+  var pages={search:'page-search',direct:'page-direct',downloads:'page-downloads',mirror:'page-mirror',favs:'page-favs',me:'page-me'};
   for(var k in pages){el(pages[k]).className='page'+(k===tab?' active':'');}
   var navs=document.querySelectorAll('nav button');
   for(var i=0;i<navs.length;i++){navs[i].className=(navs[i].getAttribute('data-tab')===tab)?'active':'';}
   if(tab==='downloads'){refreshDownloads();}
   if(tab==='mirror')renderMirrors();
   if(tab==='favs')renderFavPage();
+  if(tab==='me'){renderMe();loadMe(false);}
   window.scrollTo(0,0);
 }
 
@@ -994,6 +1714,7 @@ function init(){
   el('accel-search').checked=state.accel;
   el('dl-accel').checked=true;
   renderMirrors();updateMirrorChip();renderChips();
+  renderMe();
 
   el('btn-search').onclick=function(){doSearch(el('kw').value,false);};
   el('kw').onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();doSearch(el('kw').value,false);}};

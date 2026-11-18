@@ -18,6 +18,37 @@
 - **直达与直链**：一个智能输入框，自动识别项目地址、`owner/repo`、以及任意文件直链
 - **站内浏览**：仓库 / Releases 页面在应用内 WebView 打开，可随时用右上角 ↗ 转到系统浏览器
 - **软件更新**：启动时每天自动检查一次、也可手动检查；检查地址为 `https://api.github.com/repos/feiniu8/heiseshandian/releases/latest`，更新包同样走加速源下载，发布页可在软件内网页版打开，下载完成后到「下载」页点安装覆盖
+- **我（v1.1.1 新增）**：右下角「我」标签页，登录后不是照搬 GitHub 网页，而是一份可整理的个人项目清单，详见下一节
+
+## 「我」页（v1.1.1）
+
+右下角第 6 个标签页。登录后展示的是**整理过的个人项目清单**，不是 GitHub 网页的搬运。
+
+**登录**
+
+1. **OAuth 优先（设备码流程）**：点「用 GitHub 账号登录」→ 显示 8 位口令 → 在 GitHub 授权页输入 → 自动完成登录。需要在 `assets/index.html` 里填一次 OAuth App 的 `client_id`（GitHub → Settings → Developer settings → OAuth Apps → New OAuth App，Authorization callback URL 随便填一个 https 地址即可，设备码流程不用回调）：
+   ```js
+   var OAUTH_CLIENT_ID='你的client_id';   // 与 DEFAULT_TOKEN 一样，发布包里填死
+   ```
+   申请 scope：`repo read:user user:email gist`。没有内置 client_id 时按钮会提示改走令牌，也可以在本机粘贴 client_id 临时启用。
+2. **令牌兜底**：粘贴 Personal Access Token（classic 勾 `repo`、`read:user`、`gist`）。令牌只写本机 `localStorage`，与「加速源」页共用。
+3. **不登录**：可输入任意用户名匿名浏览其公开仓库（不能写）。
+
+**整理（全部只存本机，不碰 GitHub）**：备注、自定义分类（覆盖自动归类）、隐藏 / 含隐藏、五种排序（含自定义上下调序）。「我的 / 组织 / 全部」切换与分类 chips。
+
+**真实写操作**（在「更多操作 ⋯」里，会直接改 GitHub）：改仓库描述、改主页链接、归档 / 解除归档、删除整个仓库（必须手输完整 `owner/repo` 才发请求）、新建仓库。
+
+**文件与上传**：仓库文件浏览器（进目录、看文本、编辑后提交 commit、删文件）；上传支持粘贴文本或选本机文件（原生 `Native.pickLocalFile()` → `window.onPickFile()`，上限 3 MB），同名文件自动带 `sha` 覆盖提交。
+
+> 写操作一律直连 `api.github.com`（加速镜像不代理该域名），所以必须有带 `repo` 权限的登录态；未登录时写接口在本地就被拦下，不会发出请求。
+
+## 测试
+
+```bash
+node tests/test_me_page.js      # 39 项：登录态渲染 / 本地整理不发请求 / 写接口 method+path+body+鉴权头 / 删除二次确认 / 上传 sha 逻辑
+```
+
+用 Node 的 `vm` + DOM/fetch 桩跑，不需要真机、不发真实请求。
 
 ## 构建
 
@@ -35,6 +66,17 @@ export JAVA_HOME=/path/to/jdk
 ./build.sh --sign /path/to/release.jks blitz yourpass yourpass
 # 产出 build/black-lightning-signed.apk
 ```
+
+本次 1.1.1 随包附带的自签证书（仅供本机安装 / 覆盖升级，不要用于正式发布）：
+
+```bash
+keytool -genkeypair -keystore blitz.keystore -alias blitz -keyalg RSA -keysize 2048 -validity 10950 \
+  -storepass blacklightning -keypass blacklightning \
+  -dname "CN=Black Lightning, OU=heiseidian, O=heiseidian, L=Anshan, ST=Liaoning, C=CN"
+./build.sh --sign blitz.keystore blitz blacklightning blacklightning
+```
+
+> 注意两点：① `versionCode` / `versionName` 以 `AndroidManifest.xml` 里的值为准，只改 `build.sh` 的默认值不生效；② 若在对象存储 / FUSE 挂载盘（如 ossfs）里工作，`aapt2 compile` 会报 `failed to finish writing data`，把工程拷到本地磁盘（如 `/tmp`）再构建即可。
 
 构建链要点（脚本里已处理）：
 
@@ -60,8 +102,12 @@ export JAVA_HOME=/path/to/jdk
 │   ├── DownloadService.java# 前台服务与通知
 │   └── FilesProvider.java  # FileProvider，供安装 APK
 ├── res/                    # 图标与字符串
+├── tests/test_me_page.js   # 「我」页冒烟测试（node 直接跑）
+├── blitz.keystore          # 自签证书（口令 blacklightning / 别名 blitz）
 └── build.sh
 ```
+
+`assets/index.html` 里与「我」页相关的几个全局量：`OAUTH_CLIENT_ID`（发布包里填 OAuth App 的 client_id）、`OAUTH_SCOPES`、`MS`（该页状态）、`ghSend()`（带令牌的写接口，与只读的 `ghFetch()` 分开）。
 
 ## 实现说明
 

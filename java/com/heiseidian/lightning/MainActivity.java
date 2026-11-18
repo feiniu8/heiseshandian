@@ -2,10 +2,13 @@ package com.heiseidian.lightning;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.database.Cursor;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.OpenableColumns;
+import android.util.Base64;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,6 +23,9 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import org.json.JSONObject;
+
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
@@ -298,5 +304,98 @@ public class MainActivity extends Activity {
                 if (web != null) web.evaluateJavascript(code, null);
             }
         });
+    }
+
+    /* ---------------- 上传用文件选择 ---------------- */
+
+    private static final int REQ_PICK_FILE = 96;
+    private static final long MAX_UPLOAD_BYTES = 3L * 1024 * 1024;
+
+    private static String q(String s) {
+        return JSONObject.quote(s == null ? "" : s);
+    }
+
+    private void pickResult(String name, String mime, String b64, long size) {
+        js("window.onPickFile && window.onPickFile(" + q(name) + "," + q(mime) + "," + q(b64) + "," + size + ")");
+    }
+
+    void pickFileForUpload() {
+        try {
+            Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+            intent.setType("*/*");
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+            startActivityForResult(Intent.createChooser(intent, "选择要上传的文件"), REQ_PICK_FILE);
+        } catch (Exception e) {
+            pickResult("", "", "", 0);
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != REQ_PICK_FILE) return;
+        if (resultCode != RESULT_OK || data == null || data.getData() == null) {
+            pickResult("", "", "", 0);
+            return;
+        }
+        deliverPickedFile(data.getData());
+    }
+
+    private void deliverPickedFile(Uri uri) {
+        String name = "upload.bin";
+        String mime = "";
+        try {
+            mime = getContentResolver().getType(uri);
+            if (mime == null) mime = "";
+        } catch (Exception ignored) {
+        }
+        try {
+            Cursor c = getContentResolver().query(uri,
+                    new String[]{OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE}, null, null, null);
+            if (c != null) {
+                try {
+                    if (c.moveToFirst()) {
+                        int ni = c.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                        int si = c.getColumnIndex(OpenableColumns.SIZE);
+                        if (ni >= 0 && !c.isNull(ni)) name = c.getString(ni);
+                    }
+                } finally {
+                    c.close();
+                }
+            }
+        } catch (Exception ignored) {
+        }
+
+        InputStream in = null;
+        try {
+            in = getContentResolver().openInputStream(uri);
+            if (in == null) {
+                pickResult(name, mime, "", 0);
+                return;
+            }
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            byte[] chunk = new byte[16384];
+            int n;
+            long total = 0;
+            while ((n = in.read(chunk)) > 0) {
+                total += n;
+                if (total > MAX_UPLOAD_BYTES) {
+                    pickResult(name, mime, "", total);
+                    return;
+                }
+                bos.write(chunk, 0, n);
+            }
+            byte[] buf = bos.toByteArray();
+            pickResult(name, mime, Base64.encodeToString(buf, Base64.NO_WRAP), buf.length);
+        } catch (Exception e) {
+            pickResult(name, mime, "", 0);
+        } finally {
+            if (in != null) {
+                try {
+                    in.close();
+                } catch (Exception ignored) {
+                }
+            }
+        }
     }
 }

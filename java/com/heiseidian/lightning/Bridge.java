@@ -278,4 +278,15 @@ public class Bridge {
         } catch (Exception ignored) {
         }
     }
+
+    /** 「我」页上传：拉起系统文件选择器，结果通过 window.onPickFile(name, mime, base64, size) 回传 */
+    @JavascriptInterface
+    public void pickLocalFile() {
+        ctx.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                ctx.pickFileForUpload();
+            }
+        });
+    }
 }
