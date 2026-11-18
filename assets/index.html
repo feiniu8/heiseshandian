@@ -207,6 +207,15 @@ nav button.active{color:var(--accent)}
     <button class="btn primary wide" id="btn-ping">重新测速</button>
     <p class="note">镜像由第三方提供服务，若某个源下载失败，切换到「GitHub 直连」或其它源重试即可。测速结果仅代表当前网络。</p>
   </section>
+
+  <section class="page" id="page-favs">
+    <div class="hero">
+      <h1>收藏</h1>
+      <p>收藏保存在本机；取消收藏会进入收藏历史，可随时重新收藏。</p>
+    </div>
+    <div class="chips" id="fav-chips"></div>
+    <div id="fav-list"></div>
+  </section>
 </main>
 
 <nav>
@@ -214,6 +223,7 @@ nav button.active{color:var(--accent)}
   <button data-tab="direct"><svg viewBox="0 0 24 24"><path d="M4 12h16"/><path d="M13 6l6 6-6 6"/></svg>直达</button>
   <button data-tab="downloads"><svg viewBox="0 0 24 24"><path d="M12 4v10"/><path d="M7 11l5 5 5-5"/><path d="M4 20h16"/></svg>下载</button>
   <button data-tab="mirror"><svg viewBox="0 0 24 24"><path d="M13 2L5 14h6l-2 8 8-12h-6z"/></svg>加速源</button>
+  <button data-tab="favs"><svg viewBox="0 0 24 24"><path d="M12 3.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></svg>收藏</button>
 </nav>
 
 <div id="modal"><div class="modal-mask" onclick="closeModal()"></div>
@@ -407,12 +417,13 @@ function searchError(msg){
 function doSearch(kw,more){
   kw=(kw||'').trim();
   if(!kw)return;
-  if(/^https?:\/\//i.test(kw)||/^[\w.-]+\/[\w.-]+$/.test(kw)){
-    el('smart-url').value=kw;
-    setTab('direct');
-    handleSmart();
-    return;
+  if(/^https?:\/\//i.test(kw)){
+    if(looksLikeFile(kw)){ askDownload(kw,fileNameFromUrl(kw),'来自搜索结果的文件直链'); return; }
+    var gm=kw.match(/github\.com\/([^\/]+)\/([^\/?#]+)/i);
+    if(gm){ openRepoAssets(gm[1]+'/'+gm[2]); return; }
+    toast('该链接无法识别，请粘贴到「只下载文件」'); return;
   }
+  if(/^[\w.-]+\/[\w.-]+$/.test(kw)){ openRepoAssets(kw); return; }
   if(state.loading)return;
   if(!more){state.query=kw;state.page=1;state.repos=[];state.cat='all';}
   state.loading=true;
@@ -446,7 +457,7 @@ function openModal(title,html){
 }
 function closeModal(){el('modal').className='';state.modalOpen=false;}
 
-function repoDetailHtml(r){
+function repoDetailHtml(r,noAssets){
   var c=catInfo(r.cat);
   return '<div class="card" style="margin-bottom:14px"><div class="card-top">'+
     '<div class="avatar" style="color:'+c.color+'">'+esc((r.owner||'?').slice(0,1).toUpperCase())+'</div>'+
@@ -461,10 +472,11 @@ function repoDetailHtml(r){
     '<div class="kv"><span>默认分支</span><b>'+esc(r.branch)+'</b></div>'+
     '<div class="kv"><span>项目地址</span><b>'+esc(r.url)+'</b></div>'+
     '<div style="display:flex;gap:8px;margin:16px 0 6px">'+
-      '<button class="btn ghost" style="flex:1" onclick="Native.copyText(\''+esc(r.url)+'\')">复制地址</button>'+
-      '<button class="btn ghost" style="flex:1" onclick="openLink(\''+esc(r.url)+'\')">打开仓库</button></div>'+
+      '<button class="btn ghost" style="flex:1" onclick="Native.copyText(\''+esc(r.url)+'\')">复制</button>'+
+      '<button class="btn ghost" style="flex:1" onclick="openLink(\''+esc(r.url)+'\')">仓库</button>'+
+      '<button class="btn ghost" style="flex:1" onclick="toggleFav(\''+esc(r.full_name)+'\')">'+(isFav(r.full_name)?'取消收藏':'收藏')+'</button></div>'+
       '<p class="note">仓库网页在软件内打开，可用右上角 ↗ 转到浏览器。</p>'+
-    '<button class="btn primary wide" onclick="openAssets(\''+esc(r.full_name)+'\')">下载（获取版本）</button>'+
+    (noAssets?'':'<button class="btn primary wide" onclick="openRepoAssets(\''+esc(r.full_name)+'\')">查看可下载文件</button>')+
     '<div class="section-head" style="margin-top:20px"><span class="bar"></span><h2>项目分类</h2></div>'+
     '<p class="note">依据项目语言、Topics 与描述自动归类为「'+esc(c.name)+'」。分类仅用于快速筛选，不代表官方分类。</p>';
 }
@@ -527,14 +539,14 @@ function renderAssets(r,rel){
       var a=sorted[i];
       body+='<div class="asset"><div class="grow"><div class="an">'+esc(a.name)+'</div>'+
         '<div class="as">'+bytes(a.size)+' · 下载 '+fmt(a.download_count)+' 次</div></div>'+
-        '<button class="btn primary" onclick="startDownload(\''+esc(a.browser_download_url)+'\',\''+esc(a.name)+'\')">下载</button></div>';
+        '<button class="btn primary" onclick="askDownload(\''+esc(a.browser_download_url)+'\',\''+esc(a.name)+'\')">下载</button></div>';
     }
   }else{
     body+='<p class="note">该项目没有可下载的发布文件，可直接下载源码压缩包，或前往 Release 页面查看。</p>';
   }
   body+='<div class="section-head" style="margin-top:16px"><span class="bar"></span><h2>源码</h2></div>'+
     '<div class="asset"><div class="grow"><div class="an">'+esc(r.name)+'-'+esc(r.branch)+'.zip</div><div class="as">默认分支源码压缩包</div></div>'+
-    '<button class="btn ghost" onclick="startDownload(\'https://github.com/'+esc(r.full_name)+'/archive/refs/heads/'+esc(r.branch)+'.zip\',\''+esc(r.name)+'-'+esc(r.branch)+'.zip\')">下载</button></div>'+
+    '<button class="btn ghost" onclick="askDownload(\'https://github.com/'+esc(r.full_name)+'/archive/refs/heads/'+esc(r.branch)+'.zip\',\''+esc(r.name)+'-'+esc(r.branch)+'.zip\')">下载</button></div>'+
     '<div style="display:flex;gap:8px;margin-top:14px">'+
     '<button class="btn ghost" style="flex:1" onclick="openLink(\'https://github.com/'+esc(r.full_name)+'/releases\')">Release 页面</button>'+
     '<button class="btn ghost" style="flex:1" onclick="openLink(\''+esc(r.url)+'\')">打开仓库</button></div>';
@@ -560,11 +572,152 @@ function repoFallback(full,msg){
   var name=full.split('/')[1]||'source';
   return '<div class="empty" style="padding:24px 10px">'+esc(msg)+
     '<br><span style="font-size:12px">仍可直接下载源码或打开网页</span></div>'+
-    '<button class="btn primary wide" onclick="startDownload(\'https://github.com/'+esc(full)+'/archive/refs/heads/HEAD.zip\',\''+esc(name)+'-source.zip\')">下载源码 ZIP（HEAD）</button>'+
+    '<button class="btn primary wide" onclick="askDownload(\'https://github.com/'+esc(full)+'/archive/refs/heads/HEAD.zip\',\''+esc(name)+'-source.zip\')">下载源码 ZIP（HEAD）</button>'+
     '<div style="display:flex;gap:8px;margin-top:10px">'+
     '<button class="btn ghost" style="flex:1" onclick="openLink(\'https://github.com/'+esc(full)+'\')">打开仓库</button>'+
     '<button class="btn ghost" style="flex:1" onclick="openLink(\'https://github.com/'+esc(full)+'/releases\')">Releases</button></div>'+
     '<div class="kv" style="margin-top:12px"><span>项目地址</span><b>https://github.com/'+esc(full)+'</b></div>';
+}
+
+var pendingDl=null;
+function confirmPendingDownload(){
+  var p=pendingDl; pendingDl=null;
+  closeModal();
+  if(p)startDownload(p.url,p.name,p.accel);
+}
+function askDownload(url,name,note,useAccel){
+  if(!url){toast('没有可下载的地址');return;}
+  name=name||fileNameFromUrl(url);
+  var m=activeMirror();
+  var ch=isGithub(url)?(m&&m.prefix?m.name:'GitHub 直连'):'原始地址（不走加速）';
+  pendingDl={url:url,name:name,accel:useAccel!==false};
+  openModal('确认下载',
+    '<div class="kv"><span>文件</span><b style="word-break:break-all">'+esc(name)+'</b></div>'+
+    '<div class="kv"><span>下载通道</span><b>'+esc(ch)+'</b></div>'+
+    '<div class="kv"><span>地址</span><b style="font-size:11px;word-break:break-all">'+esc(url)+'</b></div>'+
+    (note?'<p class="note">'+esc(note)+'</p>':'')+
+    '<div style="display:flex;gap:8px;margin-top:18px">'+
+    '<button class="btn ghost" style="flex:1" onclick="closeModal()">取消</button>'+
+    '<button class="btn primary" style="flex:1" onclick="confirmPendingDownload()">确认下载</button></div>');
+}
+
+var FAV_KEY='favs_v1', FAV_HIST_KEY='favhist_v1';
+function loadJSON(k,d){try{var v=JSON.parse(localStorage.getItem(k)||'');return v||d;}catch(e){return d;}}
+function saveJSON(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function favs(){return loadJSON(FAV_KEY,[]);}
+function favHist(){return loadJSON(FAV_HIST_KEY,[]);}
+function isFav(full){var a=favs();for(var i=0;i<a.length;i++){if(a[i].full_name===full)return true;}return false;}
+function favSnap(r){
+  return {full_name:r.full_name,name:r.name,url:r.url,desc:r.description||'',cat:r.cat,stars:r.stars||0,language:r.language||'',ts:Date.now()};
+}
+function addFav(r){
+  if(!r||isFav(r.full_name))return;
+  var a=favs(); a.unshift(favSnap(r)); saveJSON(FAV_KEY,a); toast('已收藏 '+r.name);
+}
+function removeFav(full){
+  var a=favs(),removed=null,keep=[];
+  for(var i=0;i<a.length;i++){ if(a[i].full_name===full){removed=a[i];} else {keep.push(a[i]);} }
+  saveJSON(FAV_KEY,keep);
+  if(removed){ removed.removedAt=Date.now(); var h=favHist(); h.unshift(removed); saveJSON(FAV_HIST_KEY,h); }
+  toast('已取消收藏，可在收藏历史里恢复');
+}
+function refav(full){
+  var h=favHist(),item=null,keep=[];
+  for(var i=0;i<h.length;i++){ if(h[i].full_name===full){item=h[i];} else {keep.push(h[i]);} }
+  if(!item){toast('记录不存在');return;}
+  saveJSON(FAV_HIST_KEY,keep);
+  delete item.removedAt; item.ts=Date.now();
+  var a=favs(); a.unshift(item); saveJSON(FAV_KEY,a);
+  toast('已重新收藏 '+item.name);
+}
+function delFavHistory(full){
+  var h=favHist(),keep=[];
+  for(var i=0;i<h.length;i++){ if(h[i].full_name!==full)keep.push(h[i]); }
+  saveJSON(FAV_HIST_KEY,keep); toast('已删除收藏记录');
+}
+function toggleFav(full){
+  if(isFav(full)){ removeFav(full); }
+  else{
+    var r=repoByFull(full)||state.lastRepo;
+    if(!r){toast('项目信息已失效，请重新打开');return;}
+    addFav(r);
+  }
+  if(state.lastRepo&&state.lastRepo.full_name===full)openModal(state.lastRepo.name,repoDetailHtml(state.lastRepo));
+  else if(state.modalOpen)closeModal();
+  if(state.tab==='favs')renderFavPage();
+}
+function openFavRepo(full){ openRepoAssets(full); }
+function renderFavPage(){
+  var mode=state.favMode||'active';
+  var a=favs(),h=favHist();
+  el('fav-chips').innerHTML=
+    '<button class="chip '+(mode==='active'?'active':'')+'" data-fav="active">收藏中<b>'+a.length+'</b></button>'+
+    '<button class="chip '+(mode==='hist'?'active':'')+'" data-fav="hist">收藏历史<b>'+h.length+'</b></button>';
+  var list=(mode==='hist'?h:a);
+  if(!list.length){
+    el('fav-list').innerHTML='<div class="empty"><span class="big">☆</span>'+(mode==='hist'?'还没有取消过收藏':'还没有收藏项目，打开项目详情点「收藏」即可')+'</div>';
+    return;
+  }
+  var html='';
+  for(var i=0;i<list.length;i++){
+    var f=list[i],c=catInfo(f.cat);
+    var when=f.removedAt?'取消于 '+timeAgo(new Date(f.removedAt).toISOString()):'收藏于 '+timeAgo(new Date(f.ts||Date.now()).toISOString());
+    html+='<div class="card" style="margin-bottom:10px">'+
+      '<div class="card-top"><div class="avatar" style="color:'+c.color+'">'+esc((f.name||'?').slice(0,1).toUpperCase())+'</div>'+
+      '<div class="grow"><div class="repo-name">'+esc(f.name)+'</div><div class="repo-owner">'+esc(f.full_name)+' · ★ '+fmt(f.stars)+'</div></div></div>'+
+      '<div class="desc">'+esc(f.desc||'暂无项目简介')+'</div>'+
+      '<div class="tags"><span class="tag" style="color:'+c.color+';border-color:'+c.color+'55">'+esc(c.name)+'</span><span class="tag">'+esc(when)+'</span></div>'+
+      '<div class="card-actions">'+
+      '<button class="btn ghost sm" onclick="openFavRepo(\''+esc(f.full_name)+'\')">打开</button>'+
+      (mode==='hist'
+        ? '<button class="btn primary sm" onclick="refav(\''+esc(f.full_name)+'\');renderFavPage()">重新收藏</button>'+
+          '<button class="btn ghost sm" onclick="delFavHistory(\''+esc(f.full_name)+'\');renderFavPage()">删除记录</button>'
+        : '<button class="btn ghost sm" onclick="removeFav(\''+esc(f.full_name)+'\');renderFavPage()">取消收藏</button>')+
+      '</div></div>';
+  }
+  el('fav-list').innerHTML=html;
+}
+
+function openRepoAssets(full){
+  var norm=String(full||'').trim()
+    .replace(/^https?:\/\/(www\.)?github\.com\//i,'').replace(/^github\.com\//i,'')
+    .replace(/\.git$/i,'').replace(/\/+$/,'').split(/[?#]/)[0];
+  var parts=norm.split('/');
+  if(parts.length<2||!parts[0]||!parts[1]){toast('地址格式应为 owner/repo');return;}
+  var target=parts[0]+'/'+parts[1];
+  openModal(target,'<div class="loading"><div class="spin"></div>正在读取项目与可下载文件…</div>');
+  ghFetch('/repos/'+target,8000)
+    .then(function(data){
+      var r=normalize(data); state.lastRepo=r;
+      ghFetch('/repos/'+target+'/releases/latest',8000)
+        .then(function(rel){renderRepoWithAssets(r,rel);})
+        .catch(function(){renderRepoWithAssets(r,null);});
+    })
+    .catch(function(err){ openModal(target,repoFallback(target,err.message||'网络错误')); });
+}
+function renderRepoWithAssets(r,rel){
+  var h=repoDetailHtml(r,true);
+  h+='<div class="section-head" style="margin-top:18px"><span class="bar"></span><h2>可下载文件</h2></div>';
+  var assets=(rel&&rel.assets)||[];
+  if(assets.length){
+    var sorted=assets.slice().sort(function(a,b){
+      var sc=function(n){n=(n||'').toLowerCase();return n.slice(-4)==='.apk'?3:(n.slice(-4)==='.zip'?2:1);};
+      return sc(b.name)-sc(a.name);
+    });
+    h+='<div class="kv" style="margin-bottom:6px"><span>最新版本</span><b>'+esc((rel&&rel.tag_name)||'—')+'</b></div>';
+    for(var i=0;i<sorted.length;i++){
+      var a=sorted[i];
+      h+='<div class="asset"><div class="grow"><div class="an">'+esc(a.name)+'</div>'+
+        '<div class="as">'+bytes(a.size)+' · 下载 '+fmt(a.download_count)+' 次</div></div>'+
+        '<button class="btn primary" onclick="askDownload(\''+esc(a.browser_download_url)+'\',\''+esc(a.name)+'\')">下载</button></div>';
+    }
+  }else{
+    h+='<p class="note">这个项目暂时读不到发布文件，可以直接下载源码压缩包。</p>';
+  }
+  h+='<div class="asset" style="margin-top:10px"><div class="grow"><div class="an">'+esc(r.name)+'-'+esc(r.branch)+'.zip</div>'+
+     '<div class="as">默认分支源码打包</div></div>'+
+     '<button class="btn ghost" onclick="askDownload(\'https://github.com/'+esc(r.full_name)+'/archive/refs/heads/'+esc(r.branch)+'.zip\',\''+esc(r.name+'-'+r.branch+'.zip')+'\')">下载</button></div>';
+  openModal(r.name+' · 项目',h);
 }
 
 function openRepoFromText(text){
@@ -646,12 +799,11 @@ function handleSmart(){
   if(!raw){toast('请输入项目地址或下载链接');return;}
   if(!/^https?:\/\//i.test(raw)){ openRepoFromText(raw); return; }
   if(looksLikeFile(raw)){
-    startDownload(raw,fileNameFromUrl(raw),true);
-    el('smart-url').value='';
+    askDownload(raw,fileNameFromUrl(raw),'来自直达页的文件链接');
     return;
   }
   var m=raw.match(/github\.com\/([^\/]+)\/([^\/?#]+)/i);
-  if(m){ openRepoFromText(m[1]+'/'+m[2].replace(/\.git$/i,'')); return; }
+  if(m){ openRepoAssets(m[1]+'/'+m[2].replace(/\.git$/i,'')); return; }
   toast('该链接不像文件地址，请粘贴到下方「只下载文件」');
 }
 
@@ -809,12 +961,13 @@ window.onPing=function(id,ms,ok,code){
 /* ---------- tabs ---------- */
 function setTab(tab){
   state.tab=tab;
-  var pages={search:'page-search',direct:'page-direct',downloads:'page-downloads',mirror:'page-mirror'};
+  var pages={search:'page-search',direct:'page-direct',downloads:'page-downloads',mirror:'page-mirror',favs:'page-favs'};
   for(var k in pages){el(pages[k]).className='page'+(k===tab?' active':'');}
   var navs=document.querySelectorAll('nav button');
   for(var i=0;i<navs.length;i++){navs[i].className=(navs[i].getAttribute('data-tab')===tab)?'active':'';}
   if(tab==='downloads'){refreshDownloads();}
   if(tab==='mirror')renderMirrors();
+  if(tab==='favs')renderFavPage();
   window.scrollTo(0,0);
 }
 
@@ -873,6 +1026,10 @@ function init(){
     try{localStorage.setItem('accel',state.accel?'1':'0');}catch(e){}
     toast(state.accel?'已开启加速搜索':'已关闭加速搜索');
   };
+  if(el('fav-chips'))el('fav-chips').onclick=function(e){
+    var b=e.target.closest('[data-fav]'); if(!b)return;
+    state.favMode=b.getAttribute('data-fav'); renderFavPage();
+  };
   if(el('cur-ver'))el('cur-ver').textContent=curVersion();
   if(el('btn-check-update'))el('btn-check-update').onclick=function(){checkUpdate(false);};
   try{
@@ -902,7 +1059,7 @@ function init(){
     var url=(el('dl-url').value||'').trim();
     if(!/^https?:\/\//i.test(url)){toast('请输入 http/https 开头链接');return;}
     var name=(el('dl-name').value||'').trim()||fileNameFromUrl(url);
-    startDownload(url,name,isGithub(url)&&el('dl-accel').checked);
+    askDownload(url,name,'',el('dl-accel').checked);
     el('dl-url').value='';el('dl-name').value='';
   };
   renderDl();
