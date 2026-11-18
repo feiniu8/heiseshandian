@@ -587,6 +587,8 @@ function openRepoFromText(text){
 }
 
 var UPDATE_REPO='feiniu8/heiseshandian';
+/* 发布包构建时会把下面这行替换成内置令牌；仓库里保持为空 */
+var DEFAULT_TOKEN='';
 
 function curVersion(){
   try{ return Native.versionName()||'1.0.6'; }catch(e){ return '1.0.6'; }
@@ -831,6 +833,10 @@ function init(){
     state.accel=localStorage.getItem('accel')==='1';
     state.token=localStorage.getItem('token')||'';
   }catch(e){}
+  if(!state.token&&typeof DEFAULT_TOKEN!=='undefined'&&DEFAULT_TOKEN){
+    state.token=DEFAULT_TOKEN;
+    try{localStorage.setItem('token',DEFAULT_TOKEN);}catch(e){}
+  }
   el('gh-token').value=state.token||'';
   el('accel-search').checked=state.accel;
   el('dl-accel').checked=true;

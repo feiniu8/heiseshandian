@@ -7,8 +7,8 @@ cd "$(dirname "$0")"
 SDK="${ANDROID_SDK:-${ANDROID_HOME:-$HOME/android-sdk}}"
 BT="${BUILD_TOOLS:-$SDK/build-tools/34.0.0}"
 AJ="$SDK/platforms/android-34/android.jar"
-VERSION_CODE="${VERSION_CODE:-7}"
-VERSION_NAME="${VERSION_NAME:-1.0.6}"
+VERSION_CODE="${VERSION_CODE:-8}"
+VERSION_NAME="${VERSION_NAME:-1.0.7}"
 PKG_DIR="java"
 
 if [ ! -f "$AJ" ]; then
